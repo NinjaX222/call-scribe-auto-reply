@@ -24,7 +24,7 @@ const callLogs = [
     date: 'Apr 11',
     duration: '1:20',
     hasMessage: true,
-    message: 'Hi, just checking in about our meeting tomorrow. Please confirm if you're available.',
+    message: 'Hi, just checking in about our meeting tomorrow. Please confirm if you\'re available.',
   },
   {
     id: '3',
