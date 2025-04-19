@@ -1,130 +1,64 @@
+import React, { useState, useRef } from "react";
+import { Play } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
-import React, { useState, useRef } from 'react';
-import { Mic, Square, Play, Save } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { toast } from 'sonner';
+const DEFAULT_GREETING =
+  "مرحبًا، شكرًا لاتصالك! سيتم الرد عليك في أقرب وقت ممكن.";
 
 const GreetingRecorder: React.FC = () => {
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordedAudio, setRecordedAudio] = useState<string | null>(null);
-  const [playingAudio, setPlayingAudio] = useState(false);
+  const [greetingText, setGreetingText] = useState(DEFAULT_GREETING);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<BlobPart[]>([]);
+  const [audioSrc, setAudioSrc] = useState<string | null>(null);
+  const [loadingAudio, setLoadingAudio] = useState(false);
 
-  const startRecording = async () => {
+  // هذه الدالة تحوّل النص إلى صوت باستخدام متصفح الويب (كنسخة أولية، يمكن استخدام ElevenLabs لاحقًا)
+  const synthesizeSpeech = async () => {
+    if (!greetingText.trim()) return;
+    setLoadingAudio(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      
-      chunksRef.current = [];
-      mediaRecorder.addEventListener('dataavailable', (e) => {
-        chunksRef.current.push(e.data);
-      });
-      
-      mediaRecorder.addEventListener('stop', () => {
-        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        setRecordedAudio(audioUrl);
-        
-        // Stop all tracks from the stream
-        stream.getTracks().forEach(track => track.stop());
-      });
-      
-      mediaRecorder.start();
-      setIsRecording(true);
-      toast.info('Recording started...');
+      // استخدام SpeechSynthesis API (أبسط حل سريع مؤقتاً)
+      const utterance = new window.SpeechSynthesisUtterance(greetingText);
+      utterance.lang = "ar-SA";
+      window.speechSynthesis.speak(utterance);
+      toast.info("جاري قراءة الرسالة الترحيبية...");
+
+      // (لدمج ElevenLabs لاحقا: يمكنك استلام API Key وسأعدل الاستخدام)
     } catch (err) {
-      console.error('Error accessing microphone:', err);
-      toast.error('Could not access microphone. Please check permissions.');
+      toast.error("تعذر تشغيل الرسالة الصوتية!");
+    } finally {
+      setLoadingAudio(false);
     }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      toast.success('Recording completed!');
-    }
-  };
-
-  const playAudio = () => {
-    if (audioRef.current && recordedAudio) {
-      setPlayingAudio(true);
-      audioRef.current.play();
-    }
-  };
-
-  const handleAudioEnded = () => {
-    setPlayingAudio(false);
-  };
-
-  const saveGreeting = () => {
-    // This would save the greeting to storage in a real app
-    toast.success('Greeting saved successfully!');
   };
 
   return (
     <div className="p-4">
-      <Card className="p-4 mb-4">
-        <h3 className="font-medium mb-2">Custom Greeting</h3>
+      <Card className="p-4 mb-4" dir="rtl">
+        <h3 className="font-medium mb-2">اكتب رسالة ترحيبية للمتصل</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Record a custom greeting for your callers
+          أدخل الرسالة التي ستُقرأ للمتصل عند الرد التلقائي
         </p>
-        
-        <div className="flex justify-center mb-4">
-          <div className={`w-16 h-16 rounded-full flex items-center justify-center ${isRecording ? 'bg-red-500 animate-pulse-recording' : 'bg-muted'}`}>
-            <Mic className={`h-8 w-8 ${isRecording ? 'text-white' : 'text-muted-foreground'}`} />
-          </div>
-        </div>
-        
-        <div className="flex justify-center gap-2">
-          {isRecording ? (
-            <Button variant="destructive" onClick={stopRecording}>
-              <Square className="h-4 w-4 mr-2" />
-              Stop
-            </Button>
-          ) : (
-            <Button onClick={startRecording}>
-              <Mic className="h-4 w-4 mr-2" />
-              Record
-            </Button>
-          )}
-          
-          {recordedAudio && !isRecording && (
-            <>
-              <Button 
-                variant="outline" 
-                onClick={playAudio}
-                disabled={playingAudio}
-              >
-                <Play className="h-4 w-4 mr-2" />
-                Play
-              </Button>
-              
-              <Button 
-                variant="default" 
-                onClick={saveGreeting}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Save
-              </Button>
-            </>
-          )}
+        <Textarea
+          value={greetingText}
+          onChange={(e) => setGreetingText(e.target.value)}
+          rows={3}
+          dir="rtl"
+        />
+        <div className="flex justify-end mt-2 gap-2">
+          <Button
+            variant="outline"
+            onClick={synthesizeSpeech}
+            disabled={loadingAudio || !greetingText.trim()}
+          >
+            <Play className="h-4 w-4 mr-2" />
+            استمع للرسالة
+          </Button>
         </div>
       </Card>
-      
-      {recordedAudio && (
-        <audio 
-          ref={audioRef}
-          src={recordedAudio}
-          onEnded={handleAudioEnded}
-          className="hidden"
-        />
-      )}
+      {/* بإمكانك إضافة audioRef هنا إذا استخدمت تحويل نص لصوت حقيقي (mp3) عبر API لاحقًا */}
     </div>
   );
 };
