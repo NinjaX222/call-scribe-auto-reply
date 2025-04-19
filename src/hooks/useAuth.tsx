@@ -1,27 +1,31 @@
 
+// تحديث useAuth ليتبع أفضل ممارسات Supabase (تخزين session وuser معًا)
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export function useAuth() {
   const [user, setUser] = useState<any>(null);
+  const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const session = supabase.auth.getSession().then((res) => {
-      setUser(res.data.session?.user ?? null);
-      setLoading(false);
-    });
-
-    const { data: listener } = supabase.auth.onAuthStateChange(
+    // أولاً: إعداد مستمع تغيير الحالة
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
+        setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
       }
     );
 
-    return () => {
-      listener.subscription.unsubscribe();
-    };
+    // بعدها: جلب الجلسة الحالية إن وجدت
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const signUp = useCallback(async (email: string, password: string) => {
@@ -44,5 +48,5 @@ export function useAuth() {
     setLoading(false);
   }, []);
 
-  return { user, loading, signUp, signIn, signOut };
+  return { user, session, loading, signUp, signIn, signOut };
 }

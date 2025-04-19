@@ -1,4 +1,5 @@
 
+// تحسين رسائل الأخطاء وحالة الانتظار
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -17,10 +18,10 @@ export default function Auth() {
     const err = isSignIn
       ? await signIn(email, password)
       : await signUp(email, password);
-    if (err) setErrorMsg(err.message);
+    if (err) setErrorMsg(err.message || "حدث خطأ. حاول مرة أخرى أو بعد دقيقة.");
   };
 
-  if (loading) return <div className="text-center py-10">Loading...</div>;
+  if (loading) return <div className="text-center py-10">جاري التحميل...</div>;
 
   if (user)
     return (
@@ -54,7 +55,7 @@ export default function Auth() {
           autoComplete={isSignIn ? "current-password" : "new-password"}
           dir="ltr"
         />
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full" disabled={loading}>
           {isSignIn ? "دخول" : "إنشاء حساب"}
         </Button>
         <button

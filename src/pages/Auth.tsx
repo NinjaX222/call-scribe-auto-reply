@@ -1,4 +1,5 @@
 
+// صفحة تسجيل دخول منفصلة
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Auth from "@/components/Auth";
@@ -8,7 +9,7 @@ export default function AuthPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // If user is logged in, redirect to home
+  // إذا كان المستخدم مسجلاً يدخل مباشرة على الصفحة الرئيسية
   useEffect(() => {
     if (user) navigate("/");
   }, [user, navigate]);
