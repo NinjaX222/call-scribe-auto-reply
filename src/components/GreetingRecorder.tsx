@@ -1,5 +1,6 @@
+
 import React, { useRef, useState } from "react";
-import { Play } from "lucide-react";
+import { Play, Save } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -7,24 +8,43 @@ import { Button } from "@/components/ui/button";
 const DEFAULT_MESSAGE =
   "مرحبًا، شكرًا لاتصالك! سيتم الرد عليك في أقرب وقت ممكن.";
 
-const GreetingRecorder: React.FC = () => {
+// نوع البيانات للرسالة الترحيبية
+export interface GreetingDraft {
+  text: string;
+  createdAt?: Date;
+}
+
+interface GreetingRecorderProps {
+  onSave: (greeting: GreetingDraft) => void;
+  isSaving?: boolean;
+}
+
+const GreetingRecorder: React.FC<GreetingRecorderProps> = ({
+  onSave,
+  isSaving,
+}) => {
   const [message, setMessage] = useState(DEFAULT_MESSAGE);
   const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Placeholder: Play local text-to-speech using browser API
+  // زر الاستماع للرسالة (نفس السابق)
   const handlePlay = () => {
     if ("speechSynthesis" in window && message) {
       setIsPlaying(true);
-      // فضلًا، لاحظ أن هذا للاستخدام التجريبي فقط
       const utter = new window.SpeechSynthesisUtterance(message);
       utter.lang = "ar-SA";
       utter.onend = () => setIsPlaying(false);
-      window.speechSynthesis.cancel(); // Cancel if already playing
+      window.speechSynthesis.cancel();
       window.speechSynthesis.speak(utter);
     } else {
       alert("المتصفح لا يدعم تحويل النص إلى صوت");
     }
+  };
+
+  // زر حفظ الرسالة
+  const handleSave = () => {
+    if (!message.trim()) return;
+    onSave({ text: message.trim(), createdAt: new Date() });
+    setMessage(""); // تفريغ الحقل بعد الحفظ
   };
 
   return (
@@ -45,7 +65,7 @@ const GreetingRecorder: React.FC = () => {
             dir="rtl"
             placeholder="اكتب رسالتك هنا..."
           />
-          <div className="flex mt-2">
+          <div className="flex mt-2 gap-2 flex-row-reverse">
             <Button
               className="rounded-lg px-5 font-normal flex gap-2"
               variant="outline"
@@ -54,6 +74,16 @@ const GreetingRecorder: React.FC = () => {
             >
               <Play className="w-4 h-4" />
               استمع للرسالة
+            </Button>
+            <Button
+              className="rounded-lg px-5 font-normal flex gap-2"
+              onClick={handleSave}
+              disabled={isSaving || !message.trim()}
+              variant="default"
+              type="button"
+            >
+              <Save className="w-4 h-4" />
+              حفظ الرسالة
             </Button>
           </div>
         </div>
