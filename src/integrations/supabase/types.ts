@@ -9,7 +9,140 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      call_recordings: {
+        Row: {
+          call_id: string
+          created_at: string
+          file_url: string
+          id: string
+          language_detected: string | null
+        }
+        Insert: {
+          call_id: string
+          created_at?: string
+          file_url: string
+          id?: string
+          language_detected?: string | null
+        }
+        Update: {
+          call_id?: string
+          created_at?: string
+          file_url?: string
+          id?: string
+          language_detected?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_recordings_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calls: {
+        Row: {
+          answered: boolean
+          answered_by: string | null
+          call_type: string | null
+          caller_number: string
+          contact_name: string | null
+          created_at: string
+          created_by: string
+          greeting_id: string | null
+          id: string
+          reason_text: string | null
+          received_at: string
+          recording_url: string | null
+        }
+        Insert: {
+          answered?: boolean
+          answered_by?: string | null
+          call_type?: string | null
+          caller_number: string
+          contact_name?: string | null
+          created_at?: string
+          created_by: string
+          greeting_id?: string | null
+          id?: string
+          reason_text?: string | null
+          received_at?: string
+          recording_url?: string | null
+        }
+        Update: {
+          answered?: boolean
+          answered_by?: string | null
+          call_type?: string | null
+          caller_number?: string
+          contact_name?: string | null
+          created_at?: string
+          created_by?: string
+          greeting_id?: string | null
+          id?: string
+          reason_text?: string | null
+          received_at?: string
+          recording_url?: string | null
+        }
+        Relationships: []
+      }
+      greetings: {
+        Row: {
+          created_at: string
+          for_contact: string | null
+          id: string
+          message_audio_url: string | null
+          message_text: string
+          time_of_day: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          for_contact?: string | null
+          id?: string
+          message_audio_url?: string | null
+          message_text: string
+          time_of_day?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          for_contact?: string | null
+          id?: string
+          message_audio_url?: string | null
+          message_text?: string
+          time_of_day?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      settings: {
+        Row: {
+          created_at: string
+          id: string
+          language: string | null
+          other_preferences: Json | null
+          theme: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          language?: string | null
+          other_preferences?: Json | null
+          theme?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          language?: string | null
+          other_preferences?: Json | null
+          theme?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

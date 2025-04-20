@@ -1,130 +1,63 @@
+import React, { useRef, useState } from "react";
+import { Play } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 
-import React, { useState, useRef } from 'react';
-import { Mic, Square, Play, Save } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { toast } from 'sonner';
+const DEFAULT_MESSAGE =
+  "مرحبًا، شكرًا لاتصالك! سيتم الرد عليك في أقرب وقت ممكن.";
 
 const GreetingRecorder: React.FC = () => {
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordedAudio, setRecordedAudio] = useState<string | null>(null);
-  const [playingAudio, setPlayingAudio] = useState(false);
+  const [message, setMessage] = useState(DEFAULT_MESSAGE);
+  const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<BlobPart[]>([]);
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      
-      chunksRef.current = [];
-      mediaRecorder.addEventListener('dataavailable', (e) => {
-        chunksRef.current.push(e.data);
-      });
-      
-      mediaRecorder.addEventListener('stop', () => {
-        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        setRecordedAudio(audioUrl);
-        
-        // Stop all tracks from the stream
-        stream.getTracks().forEach(track => track.stop());
-      });
-      
-      mediaRecorder.start();
-      setIsRecording(true);
-      toast.info('Recording started...');
-    } catch (err) {
-      console.error('Error accessing microphone:', err);
-      toast.error('Could not access microphone. Please check permissions.');
+  // Placeholder: Play local text-to-speech using browser API
+  const handlePlay = () => {
+    if ("speechSynthesis" in window && message) {
+      setIsPlaying(true);
+      // فضلًا، لاحظ أن هذا للاستخدام التجريبي فقط
+      const utter = new window.SpeechSynthesisUtterance(message);
+      utter.lang = "ar-SA";
+      utter.onend = () => setIsPlaying(false);
+      window.speechSynthesis.cancel(); // Cancel if already playing
+      window.speechSynthesis.speak(utter);
+    } else {
+      alert("المتصفح لا يدعم تحويل النص إلى صوت");
     }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      toast.success('Recording completed!');
-    }
-  };
-
-  const playAudio = () => {
-    if (audioRef.current && recordedAudio) {
-      setPlayingAudio(true);
-      audioRef.current.play();
-    }
-  };
-
-  const handleAudioEnded = () => {
-    setPlayingAudio(false);
-  };
-
-  const saveGreeting = () => {
-    // This would save the greeting to storage in a real app
-    toast.success('Greeting saved successfully!');
   };
 
   return (
     <div className="p-4">
       <Card className="p-4 mb-4">
-        <h3 className="font-medium mb-2">Custom Greeting</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Record a custom greeting for your callers
-        </p>
-        
-        <div className="flex justify-center mb-4">
-          <div className={`w-16 h-16 rounded-full flex items-center justify-center ${isRecording ? 'bg-red-500 animate-pulse-recording' : 'bg-muted'}`}>
-            <Mic className={`h-8 w-8 ${isRecording ? 'text-white' : 'text-muted-foreground'}`} />
+        <div className="flex flex-col gap-2">
+          <label className="font-medium" dir="rtl">
+            اكتب رسالة ترحيبية للمتصل
+          </label>
+          <span className="text-sm text-muted-foreground text-right block" dir="rtl">
+            أدخل الرسالة التي سيقرأها المتصل عند الرد التلقائي
+          </span>
+
+          <Textarea
+            className="bg-muted min-h-[80px] text-right"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            dir="rtl"
+            placeholder="اكتب رسالتك هنا..."
+          />
+          <div className="flex mt-2">
+            <Button
+              className="rounded-lg px-5 font-normal flex gap-2"
+              variant="outline"
+              onClick={handlePlay}
+              disabled={isPlaying || !message.trim()}
+            >
+              <Play className="w-4 h-4" />
+              استمع للرسالة
+            </Button>
           </div>
         </div>
-        
-        <div className="flex justify-center gap-2">
-          {isRecording ? (
-            <Button variant="destructive" onClick={stopRecording}>
-              <Square className="h-4 w-4 mr-2" />
-              Stop
-            </Button>
-          ) : (
-            <Button onClick={startRecording}>
-              <Mic className="h-4 w-4 mr-2" />
-              Record
-            </Button>
-          )}
-          
-          {recordedAudio && !isRecording && (
-            <>
-              <Button 
-                variant="outline" 
-                onClick={playAudio}
-                disabled={playingAudio}
-              >
-                <Play className="h-4 w-4 mr-2" />
-                Play
-              </Button>
-              
-              <Button 
-                variant="default" 
-                onClick={saveGreeting}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Save
-              </Button>
-            </>
-          )}
-        </div>
       </Card>
-      
-      {recordedAudio && (
-        <audio 
-          ref={audioRef}
-          src={recordedAudio}
-          onEnded={handleAudioEnded}
-          className="hidden"
-        />
-      )}
     </div>
   );
 };
