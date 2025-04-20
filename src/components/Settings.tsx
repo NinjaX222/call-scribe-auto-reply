@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   Clock, 
   MessageSquare, 
@@ -20,10 +19,21 @@ import {
   SelectContent, 
   SelectItem 
 } from '@/components/ui/select';
-import { toast } from 'sonner';
+import { toast as toastShadcn } from '@/hooks/use-toast';
 import ThemeSwitcher from './ThemeSwitcher';
 import { useSettings } from "@/hooks/useSettings";
 import { Dialog } from "@radix-ui/react-dialog";
+
+const languageToastMap: Record<string, string> = {
+  arabic: "تم تغيير اللغة إلى العربية",
+  english: "Language switched to English",
+};
+
+const themeToastMap: Record<string, string> = {
+  light: "تم تفعيل الوضع الفاتح",
+  dark: "تم تفعيل الوضع الداكن",
+  system: "تم التبديل إلى وضع النظام",
+};
 
 const Settings: React.FC = () => {
   const {
@@ -35,6 +45,30 @@ const Settings: React.FC = () => {
 
   // Confirm restore dialog state
   const [openResetDialog, setOpenResetDialog] = useState(false);
+
+  // refs لحفظ القيم السابقة لتجنب عرض التوست أول مرة فقط عند التعديل
+  const prevLang = useRef(settings.language);
+  const prevTheme = useRef(settings.theme);
+
+  // Toast عند تغيير اللغة
+  useEffect(() => {
+    if (prevLang.current !== settings.language) {
+      toastShadcn({
+        description: languageToastMap[settings.language] || "تم تغيير اللغة",
+      });
+      prevLang.current = settings.language;
+    }
+  }, [settings.language]);
+
+  // Toast عند تغيير الثيم
+  useEffect(() => {
+    if (prevTheme.current !== settings.theme) {
+      toastShadcn({
+        description: themeToastMap[settings.theme] || "تم تغيير السمة",
+      });
+      prevTheme.current = settings.theme;
+    }
+  }, [settings.theme]);
 
   return (
     <div className="p-4 pb-20">
@@ -165,7 +199,9 @@ const Settings: React.FC = () => {
                   className="flex-1"
                   onClick={() => {
                     resetSettings();
-                    toast.success("تمت إعادة ضبط الإعدادات الافتراضية");
+                    toastShadcn({
+                      description: "تمت إعادة ضبط الإعدادات الافتراضية"
+                    });
                     setOpenResetDialog(false);
                   }}
                 >
@@ -184,4 +220,3 @@ const Settings: React.FC = () => {
 };
 
 export default Settings;
-
