@@ -1,5 +1,5 @@
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Play, Save } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +10,7 @@ const DEFAULT_MESSAGE =
 
 // نوع البيانات للرسالة الترحيبية
 export interface GreetingDraft {
+  id?: string; // مضاف للحالة اللاحقة (تعديل)
   text: string;
   createdAt?: Date;
 }
@@ -17,16 +18,31 @@ export interface GreetingDraft {
 interface GreetingRecorderProps {
   onSave: (greeting: GreetingDraft) => void;
   isSaving?: boolean;
+  isEditing?: boolean;
+  initialValue?: GreetingDraft | null;
+  onCancelEdit?: () => void;
 }
 
 const GreetingRecorder: React.FC<GreetingRecorderProps> = ({
   onSave,
   isSaving,
+  isEditing = false,
+  initialValue = null,
+  onCancelEdit,
 }) => {
   const [message, setMessage] = useState(DEFAULT_MESSAGE);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // زر الاستماع للرسالة (نفس السابق)
+  // عند بدء التعديل أو الخروج من التعديل، تعبئة النص أو إعادة الضبط
+  useEffect(() => {
+    if (isEditing && initialValue) {
+      setMessage(initialValue.text);
+    } else {
+      setMessage(DEFAULT_MESSAGE);
+    }
+  }, [isEditing, initialValue]);
+
+  // زر الاستماع للرسالة
   const handlePlay = () => {
     if ("speechSynthesis" in window && message) {
       setIsPlaying(true);
@@ -40,11 +56,15 @@ const GreetingRecorder: React.FC<GreetingRecorderProps> = ({
     }
   };
 
-  // زر حفظ الرسالة
+  // زر حفظ الرسالة (إضافة أو تعديل)
   const handleSave = () => {
     if (!message.trim()) return;
-    onSave({ text: message.trim(), createdAt: new Date() });
-    setMessage(""); // تفريغ الحقل بعد الحفظ
+    onSave({
+      id: initialValue?.id,
+      text: message.trim(),
+      createdAt: initialValue?.createdAt || new Date(),
+    });
+    setMessage(DEFAULT_MESSAGE); // إعادة الضبط بعد الحفظ
   };
 
   return (
@@ -57,7 +77,6 @@ const GreetingRecorder: React.FC<GreetingRecorderProps> = ({
           <span className="text-sm text-muted-foreground text-right block" dir="rtl">
             أدخل الرسالة التي سيقرأها المتصل عند الرد التلقائي
           </span>
-
           <Textarea
             className="bg-muted min-h-[80px] text-right"
             value={message}
@@ -71,6 +90,7 @@ const GreetingRecorder: React.FC<GreetingRecorderProps> = ({
               variant="outline"
               onClick={handlePlay}
               disabled={isPlaying || !message.trim()}
+              type="button"
             >
               <Play className="w-4 h-4" />
               استمع للرسالة
@@ -83,8 +103,18 @@ const GreetingRecorder: React.FC<GreetingRecorderProps> = ({
               type="button"
             >
               <Save className="w-4 h-4" />
-              حفظ الرسالة
+              {isEditing ? "تحديث الرسالة" : "حفظ الرسالة"}
             </Button>
+            {isEditing && (
+              <Button
+                variant="destructive"
+                className="rounded-lg px-5 font-normal"
+                type="button"
+                onClick={onCancelEdit}
+              >
+                إلغاء
+              </Button>
+            )}
           </div>
         </div>
       </Card>

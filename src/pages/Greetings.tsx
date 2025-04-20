@@ -4,9 +4,10 @@ import Header from '@/components/Header';
 import BottomNavigation from '@/components/BottomNavigation';
 import GreetingRecorder, { GreetingDraft } from '@/components/GreetingRecorder';
 import { Card } from '@/components/ui/card';
-import { Play, Edit, Trash2, Save } from 'lucide-react';
+import { Play, Save, Edit, Trash2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 
 // نوع الرسالة المحفوظة
@@ -33,30 +34,44 @@ function saveGreetings(data: Greeting[]) {
 const Greetings: React.FC = () => {
   const [greetings, setGreetings] = React.useState<Greeting[]>([]);
   const [activeGreeting, setActiveGreeting] = React.useState<string | null>(null);
-  const [editingId, setEditingId] = React.useState<string | null>(null);
-  const [editText, setEditText] = React.useState<string>("");
+
+  // لحالة التعديل
+  const [editingGreeting, setEditingGreeting] = React.useState<Greeting | null>(null);
 
   // تحميل الرسائل من localStorage عند أول تحميل للصفحة فقط
   React.useEffect(() => {
     const stored = getSavedGreetings();
     setGreetings(stored);
     if (stored.length > 0) {
-      // set أول رسالة كنشطة افتراضياً
       setActiveGreeting(stored.find(g => g.isActive)?.id || stored[0].id);
     }
   }, []);
 
+  // عند الحفظ: إضافة رسالة جديدة أو تعديل رسالة قائمة
   const handleSaveGreeting = (draft: GreetingDraft) => {
-    const newGreeting: Greeting = {
-      id: Math.random().toString(36).substr(2, 9),
-      text: draft.text,
-      createdAt: draft.createdAt?.getTime() || Date.now(),
-    };
-    const newGreetings = [newGreeting, ...greetings];
+    let newGreetings: Greeting[];
+    if (editingGreeting) {
+      // تعديل
+      newGreetings = greetings.map(g =>
+        g.id === editingGreeting.id
+          ? { ...g, text: draft.text }
+          : g
+      );
+      toast.success('تم تحديث الرسالة');
+    } else {
+      // إضافة
+      const newGreeting: Greeting = {
+        id: Math.random().toString(36).substr(2, 9),
+        text: draft.text,
+        createdAt: draft.createdAt?.getTime() || Date.now(),
+      };
+      newGreetings = [newGreeting, ...greetings];
+      setActiveGreeting(newGreeting.id);
+      toast.success('تم حفظ الرسالة!');
+    }
     saveGreetings(newGreetings);
     setGreetings(newGreetings);
-    setActiveGreeting(newGreeting.id);
-    toast.success('تم حفظ الرسالة!');
+    setEditingGreeting(null);
   };
 
   const handleSetActive = (id: string) => {
@@ -90,39 +105,39 @@ const Greetings: React.FC = () => {
       setActiveGreeting(null);
     }
     toast.success('تم حذف الرسالة');
+    if (editingGreeting?.id === id) setEditingGreeting(null);
   };
 
+  // عند الضغط على أيقونة القلم: تعديل
   const handleEdit = (greeting: Greeting) => {
-    setEditingId(greeting.id);
-    setEditText(greeting.text);
+    setEditingGreeting(greeting);
+    window.scrollTo({ top: 0, behavior: "smooth" }); // صعود للأعلى لسهولة التعديل
   };
 
-  const handleEditSave = (id: string) => {
-    const newGreetings = greetings.map(g =>
-      g.id === id ? { ...g, text: editText } : g
-    );
-    saveGreetings(newGreetings);
-    setGreetings(newGreetings);
-    setEditingId(null);
-    setEditText("");
-    toast.success('تم تحديث الرسالة');
-  };
-
+  // إلغاء التعديل
   const handleEditCancel = () => {
-    setEditingId(null);
-    setEditText("");
+    setEditingGreeting(null);
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-background pb-16">
       <Header />
 
-      <GreetingRecorder onSave={handleSaveGreeting} />
+      <GreetingRecorder
+        onSave={handleSaveGreeting}
+        isEditing={!!editingGreeting}
+        initialValue={
+          editingGreeting
+            ? { id: editingGreeting.id, text: editingGreeting.text, createdAt: new Date(editingGreeting.createdAt) }
+            : null
+        }
+        onCancelEdit={handleEditCancel}
+      />
 
-      <div className="px-4 mb-2">
-        <h2 className="text-lg font-medium">Saved Greetings</h2>
-        <p className="text-sm text-muted-foreground">
-          Tap to set as active greeting
+      <div className="px-4 mb-2 flex flex-col items-end">
+        <h2 className="text-lg font-medium" dir="rtl">الرسائل الترحيبية المحفوظة</h2>
+        <p className="text-sm text-muted-foreground" dir="rtl">
+          اضغط على الرسالة لجعلها الرسالة المعتمدة للرد التلقائي
         </p>
       </div>
 
@@ -141,9 +156,9 @@ const Greetings: React.FC = () => {
               <div className="flex justify-between items-start gap-3">
                 <div className="flex-1 truncate">
                   <h3 className="font-medium text-right text-base" dir="rtl">
-                    {greeting.text.split('\n')[0].slice(0, 30) + (greeting.text.length > 30 ? "..." : "")}
+                    {greeting.text.split('\n')[0].slice(0, 30) + (greeting.text.length > 30 ? "...": "")}
                   </h3>
-                  <p className="text-xs text-muted-foreground text-right mt-1" dir="rtl">
+                  <p className="text-xs text-muted-foreground text-right mt-1 whitespace-pre-line" dir="rtl">
                     {greeting.text}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
@@ -154,37 +169,16 @@ const Greetings: React.FC = () => {
                   <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); handlePlay(greeting); }}>
                     <Play className="h-4 w-4" />
                   </Button>
-                  {editingId === greeting.id ? (
-                    <>
-                      <Textarea
-                        value={editText}
-                        onChange={e => setEditText(e.target.value)}
-                        className="w-28 my-1 text-right"
-                        autoFocus
-                      />
-                      <div className="flex items-center gap-1">
-                        <Button variant="outline" size="sm" onClick={() => handleEditSave(greeting.id)}>
-                          <Save className="w-4 h-4" />
-                        </Button>
-                        <Button variant="destructive" size="sm" onClick={handleEditCancel}>
-                          إلغاء
-                        </Button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); handleEdit(greeting); }}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={(e) => handleDelete(greeting.id, e)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </>
-                  )}
+                  <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); handleEdit(greeting); }}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={(e) => handleDelete(greeting.id, e)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
                 </div>
               </div>
               {activeGreeting === greeting.id && (
